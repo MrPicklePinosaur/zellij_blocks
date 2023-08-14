@@ -5,36 +5,36 @@ use zellij_tile::prelude::*;
 
 #[derive(Default)]
 struct State {
-    mode_log: HashMap<String, usize>,
-    tabs: Vec<String>,
-    test_runs: usize,
+    tabs: Vec<TabInfo>,
+    mode: InputMode,
 }
 
 register_plugin!(State);
 
 impl ZellijPlugin for State {
     fn load(&mut self) {
-        subscribe(&[EventType::ModeUpdate, EventType::TabUpdate, EventType::Key]);
+        // attempt to read configuration from filesystem
+        // NOTE, in future version, configurable plugins will be supported and we can get it
+        // directly from the load arguments
+
+        set_selectable(false);
+        subscribe(&[
+            EventType::ModeUpdate,
+            EventType::TabUpdate,
+            EventType::Timer,
+        ]);
     }
 
     fn update(&mut self, event: Event) -> bool {
         let mut should_render = false;
         match event {
             Event::ModeUpdate(mode_info) => {
-                let mode = format!("{:?}", mode_info.mode);
-                let count = self.mode_log.entry(mode).or_insert(0);
-                *count += 1;
+                self.mode = mode_info.mode;
                 should_render = true;
             },
             Event::TabUpdate(tab_info) => {
-                self.tabs = tab_info.iter().map(|t| t.name.clone()).collect();
+                self.tabs = tab_info;
                 should_render = true;
-            },
-            Event::Key(key) => {
-                if let Key::Char('n') = key {
-                    self.test_runs += 1;
-                    open_command_pane_floating("cargo", vec!["test"]);
-                }
             },
             _ => (),
         };
@@ -42,25 +42,27 @@ impl ZellijPlugin for State {
     }
 
     fn render(&mut self, rows: usize, cols: usize) {
-        let colored_rows = color_bold(CYAN, &rows.to_string());
-        let colored_cols = color_bold(CYAN, &cols.to_string());
-        println!("");
-        println!("I have {} rows and {} columns", colored_rows, colored_cols);
-        println!("");
-        println!("{}", color_bold(GREEN, "Modes:"));
-        for (mode, count) in &self.mode_log {
-            let count = color_bold(ORANGE, &count.to_string());
-            println!("{} -> Changed {} times", mode, count);
+        print!("BAR");
+        print!(" ");
+        print!("{:?}", self.mode);
+        print!(" ");
+
+        for tab in self.tabs.iter() {
+            let tab_text = if tab.active {
+                color_bold(GREEN, &tab.position.to_string())
+            } else {
+                tab.position.to_string()
+            };
+            print!("{tab_text}");
+            print!(" ");
         }
-        println!("");
-        let current_tabs = color_bold(GREEN, "Current Tabs:");
-        let comma = color_bold(ORANGE, ", ");
-        println!("{} {}", current_tabs, self.tabs.join(&comma));
-        println!("");
-        if self.test_runs > 0 {
-            let test_run_count = color_bold(CYAN, &self.test_runs.to_string());
-            println!("Ran tests {} times!", test_run_count);
-        }
+
+        let datetime = chrono::offset::Local::now();
+        print!(
+            "{} {}",
+            datetime.time().format("%H:%M").to_string(),
+            datetime.date_naive().to_string()
+        );
     }
 }
 

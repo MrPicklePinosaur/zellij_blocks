@@ -1,9 +1,7 @@
+use std::{collections::HashMap, path::PathBuf};
 
-use ansi_term::{Style, Colour::Fixed};
+use ansi_term::{Colour::Fixed, Style};
 use zellij_tile::prelude::*;
-
-use std::collections::HashMap;
-use std::path::PathBuf;
 
 #[derive(Default)]
 struct State {
@@ -27,17 +25,17 @@ impl ZellijPlugin for State {
                 let count = self.mode_log.entry(mode).or_insert(0);
                 *count += 1;
                 should_render = true;
-            }
+            },
             Event::TabUpdate(tab_info) => {
                 self.tabs = tab_info.iter().map(|t| t.name.clone()).collect();
                 should_render = true;
-            }
+            },
             Event::Key(key) => {
                 if let Key::Char('n') = key {
                     self.test_runs += 1;
                     open_command_pane_floating("cargo", vec!["test"]);
                 }
-            }
+            },
             _ => (),
         };
         should_render

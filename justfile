@@ -12,3 +12,7 @@ fmt:
 
 lint:
     cargo clippy -- -W clippy::unwrap_used -W clippy::cargo
+
+install:
+    ./dev/scripts/install
+

@@ -94,7 +94,7 @@ impl ZellijPlugin for State {
         );
         center_bar.push(date_block);
 
-        right_bar.push(self.count.to_string());
+        // right_bar.push(self.count.to_string());
 
         if let Some(session_name) = &self.session_name {
             right_bar.push(format!("({})", session_name));

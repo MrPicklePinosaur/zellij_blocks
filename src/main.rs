@@ -55,8 +55,10 @@ impl ZellijPlugin for State {
 
         let seperator = " ";
         let mut left_bar: Vec<String> = vec![];
+        let mut center_bar: Vec<String> = vec![];
         let mut right_bar: Vec<String> = vec![];
 
+        left_bar.push(" ".into());
         left_bar.push("Zellij".into());
         left_bar.push(format!("{:?}", self.mode));
 
@@ -81,21 +83,30 @@ impl ZellijPlugin for State {
             datetime.time().format("%H:%M").to_string(),
             datetime.date_naive().to_string()
         );
-        right_bar.push(date_block);
+        center_bar.push(date_block);
 
         right_bar.push(self.count.to_string());
+        right_bar.push(" ".into());
 
         let left_bar_text = left_bar.join(seperator);
+        let center_bar_text = center_bar.join(seperator);
         let right_bar_text = right_bar.join(seperator);
 
         let re = Regex::new(r#"\x1b\[[0-9;]*m"#).unwrap();
         let left_len = re.replace_all(&left_bar_text, "").chars().count();
+        let center_len = re.replace_all(&center_bar_text, "").chars().count();
         let right_len = re.replace_all(&right_bar_text, "").chars().count();
 
-        let middle_padding = " ".repeat(cols - left_len - right_len);
+        let left_padding = " ".repeat(cols / 2 - left_len - center_len / 2);
+        let right_padding =
+            " ".repeat(cols - left_len - left_padding.chars().count() - center_len - right_len);
 
-        print!("{left_bar_text}{middle_padding}{right_bar_text}")
+        print!("{left_bar_text}{left_padding}{center_bar_text}{right_padding}{right_bar_text}")
     }
+}
+
+pub fn div_up(a: usize, b: usize) -> usize {
+    (0..a).step_by(b).size_hint().0
 }
 
 pub const CYAN: u8 = 51;
@@ -106,37 +117,6 @@ pub const BLACK: u8 = 16;
 pub const RED: u8 = 124;
 pub const GREEN: u8 = 154;
 pub const ORANGE: u8 = 166;
-
-/// Wrapper around ansi_term library to keep track of length of original unstylized string
-struct ANSIString {
-    text: String,
-    styled_text: String,
-}
-
-impl ANSIString {
-    pub fn new_text(text: &str) -> Self {
-        Self {
-            text: text.to_string(),
-            styled_text: text.to_string(),
-        }
-    }
-
-    pub fn new_styled(style: Style, text: &str) -> Self {
-        Self {
-            text: text.to_string(),
-            styled_text: style.paint(text).to_string(),
-        }
-    }
-
-    pub fn paint(&self) -> String {
-        self.styled_text.clone()
-    }
-
-    /// Length of unstylized string
-    pub fn content_len(&self) -> usize {
-        self.text.len()
-    }
-}
 
 fn color_bold(color: u8, text: &str) -> String {
     format!("{}", Style::new().fg(Fixed(color)).bold().paint(text))

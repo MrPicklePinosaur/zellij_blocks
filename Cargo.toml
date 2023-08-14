@@ -13,6 +13,7 @@ repository = "https://github.com/MrPicklePinosaur/zellij_blocks"
 ansi_term = "0.12"
 zellij-tile = "0.37"
 chrono = "0.4"
+regex = "1.9"
 
 [build]
 target = "wasm32-wasi"

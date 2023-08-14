@@ -1,6 +1,7 @@
 use std::{collections::HashMap, path::PathBuf};
 
 use ansi_term::{Colour::Fixed, Style};
+use regex::Regex;
 use zellij_tile::prelude::*;
 
 #[derive(Default)]
@@ -65,9 +66,9 @@ impl ZellijPlugin for State {
             .iter()
             .map(|tab| {
                 let mut tab_text = format!("{}", tab.position);
-                // if tab.active {
-                //    tab_text = color_bold(GREEN, &tab_text);
-                // };
+                if tab.active {
+                    tab_text = color_bold(GREEN, &tab_text);
+                };
                 tab_text
             })
             .collect::<Vec<_>>()
@@ -87,7 +88,11 @@ impl ZellijPlugin for State {
         let left_bar_text = left_bar.join(seperator);
         let right_bar_text = right_bar.join(seperator);
 
-        let middle_padding = " ".repeat(cols - left_bar_text.len() - right_bar_text.len());
+        let re = Regex::new(r#"\x1b\[[0-9;]*m"#).unwrap();
+        let left_len = re.replace_all(&left_bar_text, "").chars().count();
+        let right_len = re.replace_all(&right_bar_text, "").chars().count();
+
+        let middle_padding = " ".repeat(cols - left_len - right_len);
 
         print!("{left_bar_text}{middle_padding}{right_bar_text}")
     }
@@ -101,6 +106,37 @@ pub const BLACK: u8 = 16;
 pub const RED: u8 = 124;
 pub const GREEN: u8 = 154;
 pub const ORANGE: u8 = 166;
+
+/// Wrapper around ansi_term library to keep track of length of original unstylized string
+struct ANSIString {
+    text: String,
+    styled_text: String,
+}
+
+impl ANSIString {
+    pub fn new_text(text: &str) -> Self {
+        Self {
+            text: text.to_string(),
+            styled_text: text.to_string(),
+        }
+    }
+
+    pub fn new_styled(style: Style, text: &str) -> Self {
+        Self {
+            text: text.to_string(),
+            styled_text: style.paint(text).to_string(),
+        }
+    }
+
+    pub fn paint(&self) -> String {
+        self.styled_text.clone()
+    }
+
+    /// Length of unstylized string
+    pub fn content_len(&self) -> usize {
+        self.text.len()
+    }
+}
 
 fn color_bold(color: u8, text: &str) -> String {
     format!("{}", Style::new().fg(Fixed(color)).bold().paint(text))

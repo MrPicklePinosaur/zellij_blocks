@@ -1,6 +1,6 @@
 use std::{collections::HashMap, path::PathBuf};
 
-use ansi_term::{Colour::Fixed, Style};
+use ansi_term::Colour::{Fixed, RGB};
 use regex::Regex;
 use zellij_tile::prelude::*;
 
@@ -10,6 +10,7 @@ struct State {
     mode: InputMode,
     count: usize,
     session_name: Option<String>,
+    palette: Palette,
 }
 
 register_plugin!(State);
@@ -35,6 +36,7 @@ impl ZellijPlugin for State {
             Event::ModeUpdate(mode_info) => {
                 self.mode = mode_info.mode;
                 self.session_name = mode_info.session_name;
+                self.palette = mode_info.style.colors;
                 should_render = true;
             },
             Event::TabUpdate(tab_info) => {
@@ -63,7 +65,7 @@ impl ZellijPlugin for State {
         left_bar.push(" ".into());
         left_bar.push("Zellij".into());
         let mode_str = format!("{:?}", self.mode);
-        left_bar.push(mode_style(&mode_str));
+        left_bar.push(mode_style(&self.palette, &mode_str));
 
         let tab_seperator = " ";
         let tab_block = self
@@ -72,7 +74,11 @@ impl ZellijPlugin for State {
             .map(|tab| {
                 let mut tab_text = format!("{}", tab.position);
                 if tab.active {
-                    tab_text = color_bold(GREEN, &tab_text);
+                    tab_text = ansi_term::Style::new()
+                        .fg(to_ansi(&self.palette.green))
+                        .bold()
+                        .paint(tab_text)
+                        .to_string();
                 };
                 tab_text
             })
@@ -114,9 +120,12 @@ impl ZellijPlugin for State {
     }
 }
 
-pub fn mode_style(mode: &str) -> String {
+pub fn mode_style(palette: &Palette, mode: &str) -> String {
     let style = match mode {
-        "Normal" => Style::new().fg(Fixed(BLACK)).on(Fixed(GREEN)).bold(),
+        "Normal" => ansi_term::Style::new()
+            .fg(to_ansi(&palette.black))
+            .on(to_ansi(&palette.green))
+            .bold(),
         _ => return mode.to_string(),
     };
 
@@ -127,15 +136,16 @@ pub fn div_up(a: usize, b: usize) -> usize {
     (0..a).step_by(b).size_hint().0
 }
 
-pub const CYAN: u8 = 51;
-pub const GRAY_LIGHT: u8 = 238;
-pub const GRAY_DARK: u8 = 245;
-pub const WHITE: u8 = 15;
-pub const BLACK: u8 = 16;
-pub const RED: u8 = 124;
-pub const GREEN: u8 = 154;
-pub const ORANGE: u8 = 166;
+fn to_ansi(color: &PaletteColor) -> ansi_term::Color {
+    match color {
+        PaletteColor::Rgb((r, g, b)) => RGB(*r, *g, *b),
+        PaletteColor::EightBit(bits) => Fixed(*bits),
+    }
+}
 
 fn color_bold(color: u8, text: &str) -> String {
-    format!("{}", Style::new().fg(Fixed(color)).bold().paint(text))
+    format!(
+        "{}",
+        ansi_term::Style::new().fg(Fixed(color)).bold().paint(text)
+    )
 }

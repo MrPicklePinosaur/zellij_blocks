@@ -7,6 +7,7 @@ use zellij_tile::prelude::*;
 struct State {
     tabs: Vec<TabInfo>,
     mode: InputMode,
+    count: usize,
 }
 
 register_plugin!(State);
@@ -17,6 +18,7 @@ impl ZellijPlugin for State {
         // NOTE, in future version, configurable plugins will be supported and we can get it
         // directly from the load arguments
 
+        set_timeout(1.0);
         set_selectable(false);
         subscribe(&[
             EventType::ModeUpdate,
@@ -36,33 +38,58 @@ impl ZellijPlugin for State {
                 self.tabs = tab_info;
                 should_render = true;
             },
+            Event::Timer(_) => {
+                // This is called at least once a second
+                should_render = true;
+                set_timeout(1.0);
+                self.count += 1;
+            },
             _ => (),
         };
         should_render
     }
 
     fn render(&mut self, rows: usize, cols: usize) {
-        print!("BAR");
-        print!(" ");
-        print!("{:?}", self.mode);
-        print!(" ");
+        // TODO special formatting effects mess with padding
 
-        for tab in self.tabs.iter() {
-            let tab_text = if tab.active {
-                color_bold(GREEN, &tab.position.to_string())
-            } else {
-                tab.position.to_string()
-            };
-            print!("{tab_text}");
-            print!(" ");
-        }
+        let seperator = " ";
+        let mut left_bar: Vec<String> = vec![];
+        let mut right_bar: Vec<String> = vec![];
+
+        left_bar.push("Zellij".into());
+        left_bar.push(format!("{:?}", self.mode));
+
+        let tab_seperator = " ";
+        let tab_block = self
+            .tabs
+            .iter()
+            .map(|tab| {
+                let mut tab_text = format!("{}", tab.position);
+                // if tab.active {
+                //    tab_text = color_bold(GREEN, &tab_text);
+                // };
+                tab_text
+            })
+            .collect::<Vec<_>>()
+            .join(tab_seperator);
+        left_bar.push(tab_block);
 
         let datetime = chrono::offset::Local::now();
-        print!(
+        let date_block = format!(
             "{} {}",
             datetime.time().format("%H:%M").to_string(),
             datetime.date_naive().to_string()
         );
+        right_bar.push(date_block);
+
+        right_bar.push(self.count.to_string());
+
+        let left_bar_text = left_bar.join(seperator);
+        let right_bar_text = right_bar.join(seperator);
+
+        let middle_padding = " ".repeat(cols - left_bar_text.len() - right_bar_text.len());
+
+        print!("{left_bar_text}{middle_padding}{right_bar_text}")
     }
 }
 

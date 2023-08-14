@@ -1,0 +1,15 @@
+[package]
+name = "zellij_blocks"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+authors = ["Daniel Liu <mr.picklepinosaur@gmail.com>"]
+description = "configurable status bar for zellij"
+repository = "https://github.com/MrPicklePinosaur/zellij_blocks"
+
+[features]
+
+[dependencies]
+ansi_term = "0.12"
+zellij-tile = "0.37"
+chrono = "0.4"

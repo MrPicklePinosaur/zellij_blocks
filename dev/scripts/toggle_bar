@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# zellij action launch-or-focus-plugin "file:$HOME/.config/zellij/plugins/zellij_blocks.wasm"
+# zellij action launch-or-focus-plugin "file:$HOME/Repos/zellij_blocks/target/wasm32-wasi/debug/zellij_blocks.wasm"
+# zellij action write 69

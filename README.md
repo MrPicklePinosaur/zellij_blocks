@@ -30,3 +30,8 @@ or from a current zellij session
 zellij action new-tab --layout ./plugin-dev-workspace.kdl
 ```
 
+## TODO
+
+- [ ] toggle bar on or off
+- [ ] kdl-like config file (or wait until plugin config is merged)
+- [ ] use palette colors

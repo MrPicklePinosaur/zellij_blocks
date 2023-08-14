@@ -9,6 +9,7 @@ struct State {
     tabs: Vec<TabInfo>,
     mode: InputMode,
     count: usize,
+    session_name: Option<String>,
 }
 
 register_plugin!(State);
@@ -33,6 +34,7 @@ impl ZellijPlugin for State {
         match event {
             Event::ModeUpdate(mode_info) => {
                 self.mode = mode_info.mode;
+                self.session_name = mode_info.session_name;
                 should_render = true;
             },
             Event::TabUpdate(tab_info) => {
@@ -60,7 +62,8 @@ impl ZellijPlugin for State {
 
         left_bar.push(" ".into());
         left_bar.push("Zellij".into());
-        left_bar.push(format!("{:?}", self.mode));
+        let mode_str = format!("{:?}", self.mode);
+        left_bar.push(mode_style(&mode_str));
 
         let tab_seperator = " ";
         let tab_block = self
@@ -86,8 +89,14 @@ impl ZellijPlugin for State {
         center_bar.push(date_block);
 
         right_bar.push(self.count.to_string());
+
+        if let Some(session_name) = &self.session_name {
+            right_bar.push(format!("({})", session_name));
+        }
+
         right_bar.push(" ".into());
 
+        // Render Bar
         let left_bar_text = left_bar.join(seperator);
         let center_bar_text = center_bar.join(seperator);
         let right_bar_text = right_bar.join(seperator);
@@ -103,6 +112,15 @@ impl ZellijPlugin for State {
 
         print!("{left_bar_text}{left_padding}{center_bar_text}{right_padding}{right_bar_text}")
     }
+}
+
+pub fn mode_style(mode: &str) -> String {
+    let style = match mode {
+        "Normal" => Style::new().fg(Fixed(BLACK)).on(Fixed(GREEN)).bold(),
+        _ => return mode.to_string(),
+    };
+
+    style.paint(mode).to_string()
 }
 
 pub fn div_up(a: usize, b: usize) -> usize {
